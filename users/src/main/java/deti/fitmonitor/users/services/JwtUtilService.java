@@ -2,89 +2,131 @@ package deti.fitmonitor.users.services;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.origin.SystemEnvironmentOrigin;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import deti.fitmonitor.users.exceptions.SecureRandomGenerationException;
 
+import java.math.BigInteger;
+import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.util.Base64;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
+import java.security.interfaces.RSAPublicKey;
+import java.security.spec.RSAPublicKeySpec;
+import java.security.spec.X509EncodedKeySpec;
+
+
 @Service
 public class JwtUtilService {
 
-    private final SecretKey secretKey;
+    @Value("${cognito.jwks.url}")
+    private String jwksUrl;
 
-    public JwtUtilService() {
-        // Generate a secret key with the desired algorithm (HS256)
-        this.secretKey = generateSecretKey();
+    private final RestTemplate restTemplate;
+    private final ObjectMapper objectMapper;
+
+    public JwtUtilService(RestTemplate restTemplate) {
+        this.restTemplate = restTemplate;
+        this.objectMapper = new ObjectMapper();
+    }
+
+    public Claims verifyToken(String token) throws Exception {
+        String kid = extractKidFromToken(token);
+        System.out.println("Kid: " + kid);
+        RSAPublicKey publicKey = getPublicKeyFromJwks(kid);
+        System.out.println("Public key: " + publicKey);
+        return Jwts.parser().setSigningKey(publicKey).build().parseSignedClaims(token).getPayload();
+    }
+
+    public String extractKidFromToken(String token) throws Exception {
+        // Split the token by '.' to get the header (first part)
+        String[] parts = token.split("\\.");
+        
+        if (parts.length != 3) {
+            throw new IllegalArgumentException("Invalid JWT token format");
+        }
+    
+        // Decode the Base64 URL-encoded header
+        String headerJson = new String(Base64.getUrlDecoder().decode(parts[0]));
+    
+        // Parse the header JSON to extract the "kid"
+        ObjectMapper objectMapper = new ObjectMapper();
+        Map<String, Object> headerMap = objectMapper.readValue(headerJson, Map.class);
+        
+        // Return the "kid" value
+        return headerMap.get("kid").toString();
     }
     
-    public String extractUsername(String token) {
-        return extractClaim(token, Claims::getSubject);
+
+    private RSAPublicKey getPublicKeyFromJwks(String kid) throws Exception {
+        // Fetch the JWKS from the provided URL
+        JsonNode jwks = restTemplate.getForObject(jwksUrl, JsonNode.class);
+        for (JsonNode key : jwks.get("keys")) {
+            if (key.get("kid").asText().equals(kid)) {
+                String modulus = key.get("n").asText();
+                String exponent = key.get("e").asText();
+                return createPublicKey(modulus, exponent);
+            }
+        }
+        
+
+        throw new RuntimeException("Unable to find matching key in JWKS");
     }
 
-    public String extractRole(String token) {
-        return extractAllClaims(token).get("role", String.class);
+    private RSAPublicKey createPublicKey(String modulus, String exponent) throws Exception {
+        // Decode the Base64 URL-encoded values
+        byte[] decodedModulus = Base64.getUrlDecoder().decode(modulus);
+        byte[] decodedExponent = Base64.getUrlDecoder().decode(exponent);
+
+        BigInteger modBigInt = new BigInteger(1, decodedModulus);
+        BigInteger expBigInt = new BigInteger(1, decodedExponent);
+
+        RSAPublicKeySpec spec = new RSAPublicKeySpec(modBigInt, expBigInt);
+        KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+        return (RSAPublicKey) keyFactory.generatePublic(spec);
     }
 
-    public Date extractExpiration(String token) {
-        return extractClaim(token, Claims::getExpiration);
+    // Extract the username (subject) from the token
+    public String extractUsername(String token) throws Exception {
+        Claims claims = verifyToken(token);
+        return claims.getSubject();
     }
 
-    public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
-        final Claims claims = extractAllClaims(token);
-        return claimsResolver.apply(claims);
+    // Extract the role from the token (assuming "role" is a claim)
+    public List<String> extractRoles(String token) throws Exception {
+        System.out.println("Extracting roles");
+        Claims claims = verifyToken(token);
+    
+        // Extract the list of roles from "cognito:groups"
+        return claims.get("cognito:groups", List.class);
     }
 
-    private Claims extractAllClaims(String token) {
-        return Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token).getPayload();
+    // Extract the token expiration date
+    public Date extractExpiration(String token) throws Exception {
+        Claims claims = verifyToken(token);
+        return claims.getExpiration();
     }
 
-    private Boolean isTokenExpired(String token) {
+    // Check if the token has expired
+    public boolean isTokenExpired(String token) throws Exception {
         return extractExpiration(token).before(new Date());
     }
-
-    public String generateToken(UserDetails userDetails) {
-        Map<String, Object> claims = new HashMap<>();
-        return createToken(claims, userDetails.getUsername());
-    }
-
-    private String createToken(Map<String, Object> extraClaims, String user) {
-        return Jwts.builder().claims().empty().add(extraClaims).subject(user)
-                .issuedAt(new Date(System.currentTimeMillis()))
-                .expiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10)).and()
-                .signWith(secretKey)
-                .compact();
-    }
-
-    public Boolean validateToken(String token, UserDetails userDetails) {
-        final String username = extractUsername(token);
-        return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));
-    }
-
-    private SecretKey generateSecretKey() {
-        // Define the key byte size
-        int keyByteSize = 32; // Example: 32 bytes for HS256 algorithm
-
-        // Generate random bytes
-        byte[] keyBytes = new byte[keyByteSize];
-        SecureRandom secureRandom;
-        try {
-            secureRandom = SecureRandom.getInstanceStrong();
-            secureRandom.nextBytes(keyBytes);
-        } catch (NoSuchAlgorithmException e) {
-            throw new SecureRandomGenerationException("Error generating secure random bytes for secret key", e);
-        }
-
-        // Return the secret key using the generated bytes and the algorithm
-        return new SecretKeySpec(keyBytes, "HmacSHA256");
-    }
+    
 }

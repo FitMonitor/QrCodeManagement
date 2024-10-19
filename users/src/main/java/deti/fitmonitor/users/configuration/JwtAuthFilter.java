@@ -7,37 +7,32 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import org.springframework.web.client.RestTemplate;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-
 import deti.fitmonitor.users.services.JwtUtilService;
+
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+
 
 @Component
 public class JwtAuthFilter extends OncePerRequestFilter {
 
-    private JwtUtilService jwtUtil;
+    private final JwtUtilService jwtUtil;
 
     @Autowired
-    public JwtAuthFilter(JwtUtilService jwtUtil) {
+    public JwtAuthFilter(@Lazy JwtUtilService jwtUtil) {
         this.jwtUtil = jwtUtil;
     }
 
@@ -51,36 +46,48 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         // Get the token from the header
-        
         String authorizationHeader = request.getHeader("Authorization");
         String token = null;
-        String role = null;
+        List<String> roles = null;
 
         // Check if the token is not null and starts with Bearer
         if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
             token = authorizationHeader.substring(7);
-            
+
             try {
-                // Try to extract username using jwtUtil
-                role = jwtUtil.extractRole(token);
+                // Extract roles from the token
+                roles = jwtUtil.extractRoles(token);
+                System.out.println("Roles: " + roles);
 
-                GrantedAuthority authority = new SimpleGrantedAuthority(role);
-
-                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                null, // principal
-                null, // credentials
-                Collections.singletonList(authority) // authorities
-                );
-
-                SecurityContextHolder.getContext().setAuthentication(authentication);
+                if (roles != null && !roles.isEmpty()) {
+                    // Convert roles into a list of GrantedAuthority
+                    List<GrantedAuthority> authorities = roles.stream()
+                            .map(role -> new SimpleGrantedAuthority("ROLE_" + role)) // Add prefix here
+                            .collect(Collectors.toList());
+                
+                    // Create UsernamePasswordAuthenticationToken with authorities
+                    UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                            null, // principal
+                            null, // credentials
+                            authorities // authorities
+                    );
+                
+                    // Set the authentication details
+                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                
+                    System.out.println("Authentication: " + authentication);
+                    // Set the authenticated user in the security context
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                }
+                
             } catch (Exception e) {
-                // If the token is invalid, the user will not be authenticated
+                // If the token is invalid or an exception occurs, clear the security context
                 SecurityContextHolder.clearContext();
+                e.printStackTrace();
             }
-
-            
         }
+
+        // Continue the filter chain
         filterChain.doFilter(request, response);
     }
-    
 }

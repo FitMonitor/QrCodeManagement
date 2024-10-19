@@ -1,5 +1,6 @@
 package deti.fitmonitor.users.controllers;
 
+import deti.fitmonitor.users.services.JwtUtilService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -8,7 +9,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
@@ -26,25 +31,41 @@ public class GetTokenController {
     private String clientCredentials;
 
     private final RestTemplate restTemplate;
+    private final JwtUtilService jwtUtilService; // Add JwtUtilService
 
     // Caching map
     private final Map<String, String> tokenCache = new ConcurrentHashMap<>();
     // Lock map to handle concurrent requests for the same code
     private final Map<String, Lock> lockMap = new ConcurrentHashMap<>();
 
-    public GetTokenController(RestTemplate restTemplate) {
+    public GetTokenController(RestTemplate restTemplate, JwtUtilService jwtUtilService) {
         this.restTemplate = restTemplate;
+        this.jwtUtilService = jwtUtilService; // Initialize JwtUtilService
     }
 
     // Handle GET request
     @GetMapping("/get")
-    public ResponseEntity<String> getToken(@RequestParam String code) {
+    public ResponseEntity<Map<String, Object>> getToken(@RequestParam String code) throws Exception {
         System.out.println("Code: " + code);
 
         // Check if the token is already cached
         if (tokenCache.containsKey(code)) {
             System.out.println("Returning cached token for code: " + code);
-            return ResponseEntity.ok(tokenCache.get(code));
+
+            String jwtToken = tokenCache.get(code);
+
+            JsonObject jsonObject = new JsonParser().parse(jwtToken).getAsJsonObject();
+
+            String id_token = jsonObject.get("id_token").getAsString();
+
+
+            // Extract roles from the token
+            List<String> roles = jwtUtilService.extractRoles(id_token); // Use JwtUtilService
+
+            System.out.println("Roles: " + roles);
+
+
+            return ResponseEntity.ok(getTokenResponse(jwtToken, roles));
         }
 
         // Create a lock for this code
@@ -55,7 +76,21 @@ public class GetTokenController {
             // Double-check if the token is cached after acquiring the lock
             if (tokenCache.containsKey(code)) {
                 System.out.println("Returning cached token for code after acquiring lock: " + code);
-                return ResponseEntity.ok(tokenCache.get(code));
+
+                String jwtToken = tokenCache.get(code);
+
+                JsonObject jsonObject = new JsonParser().parse(jwtToken).getAsJsonObject();
+
+                String id_token = jsonObject.get("id_token").getAsString();
+
+
+                // Extract roles from the token
+                List<String> roles = jwtUtilService.extractRoles(id_token); // Use JwtUtilService
+
+                System.out.println("Roles: " + roles);
+
+
+                return ResponseEntity.ok(getTokenResponse(jwtToken, roles));
             }
 
             // Prepare headers
@@ -75,17 +110,36 @@ public class GetTokenController {
             // Make the request (POST to external API)
             ResponseEntity<String> response = restTemplate.exchange(tokenUrl, HttpMethod.POST, entity, String.class);
 
-            // Print the response
-            System.out.println(response.getBody());
-
             // Cache the response body (JWT token or error)
-            tokenCache.put(code, response.getBody());
+            String jwtToken = response.getBody();
+            tokenCache.put(code, jwtToken);
 
-            return ResponseEntity.status(response.getStatusCode()).body(response.getBody());
+            JsonObject jsonObject = new JsonParser().parse(jwtToken).getAsJsonObject();
+
+            String id_token = jsonObject.get("id_token").getAsString();
+
+
+            // Extract roles from the token
+            List<String> roles = jwtUtilService.extractRoles(id_token); // Use JwtUtilService
+
+            System.out.println("Roles: " + roles);
+
+            // Prepare the response
+            return ResponseEntity.ok(getTokenResponse(jwtToken, roles));
 
         } finally {
             lock.unlock(); // Always release the lock
             lockMap.remove(code); // Remove the lock after usage
         }
+    }
+
+    // Helper method to create response map
+    private Map<String, Object> getTokenResponse(String token) {
+        return Map.of("token", token, "roles", List.of());
+    }
+
+    // Overloaded helper method to create response map with roles
+    private Map<String, Object> getTokenResponse(String token, List<String> roles) {
+        return Map.of("token", token, "roles", roles);
     }
 }
