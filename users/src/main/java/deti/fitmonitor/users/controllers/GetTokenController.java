@@ -43,6 +43,12 @@ public class GetTokenController {
         this.jwtUtilService = jwtUtilService; // Initialize JwtUtilService
     }
 
+    @GetMapping("/test")
+    public ResponseEntity<String> test() {
+        System.out.println("Test successful");
+        return ResponseEntity.ok("Test successful");
+    }
+
     // Handle GET request
     @GetMapping("/get")
     public ResponseEntity<Map<String, Object>> getToken(@RequestParam String code) throws Exception {

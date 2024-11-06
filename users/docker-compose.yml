@@ -1,0 +1,22 @@
+services:
+  spring:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: spring
+    ports:
+      - 8080:8080
+    restart: unless-stopped
+    image: miguelcruzeiro/fitmonitor_usermanagement
+    expose:
+      - 8080
+    environment:
+      COGNITO_JWKS_URL: ${COGNITO_JWKS_URL}
+      EXTERNAL_AUTH_TOKEN_URL: ${EXTERNAL_AUTH_TOKEN_URL}
+      EXTERNAL_AUTH_CLIENT_CREDENTIALS: ${EXTERNAL_AUTH_CLIENT_CREDENTIALS}
+    networks:
+      - default
+
+networks:
+  default:
+    driver: bridge
