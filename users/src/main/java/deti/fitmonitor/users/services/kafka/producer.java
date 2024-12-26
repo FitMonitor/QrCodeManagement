@@ -8,6 +8,7 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.KafkaHeaders;
 import org.springframework.kafka.support.SendResult;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.header.internals.RecordHeader;
 import org.slf4j.Logger;
 
 
@@ -27,7 +28,7 @@ public class producer {
 
     public void sendMachine(String message, String correlationId) {
         ProducerRecord<String, String> record = new ProducerRecord<>(MachineTopic, message);
-        record.headers().add(KafkaHeaders.CORRELATION_ID, correlationId.getBytes());
+        record.headers().add(new RecordHeader("correlationId", correlationId.getBytes()));
         CompletableFuture<SendResult<String, String>> future = kafkaTemplate.send(record);
         future.whenComplete((result, ex) -> {
             if (ex != null) {
