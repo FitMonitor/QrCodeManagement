@@ -42,8 +42,19 @@ public class producer {
         
     }
 
-    public void sendUser(String message) {
-        this.kafkaTemplate.send(UserTopic, message);
+    public void sendGymEntrance(String message, String correlationId) {
+        ProducerRecord<String, String> record = new ProducerRecord<>(UserTopic, message);
+        record.headers().add(new RecordHeader("correlationId", correlationId.getBytes()));
+        CompletableFuture<SendResult<String, String>> future = kafkaTemplate.send(record);
+        future.whenComplete((result, ex) -> {
+            if (ex != null) {
+                 //failure
+                log.info("Unable to send message=[" +
+                message + "] due to : " + ex.getMessage());
+            } else {
+                System.out.println("Sent message to user topic: " + message);
+            }
+        });
     }
     
 }

@@ -23,6 +23,12 @@ public class QrCodeService {
         return replyConsumer.waitForReply(correlationId);
     }
 
+    public String gymEntrance(String token) {
+        String correlationId = UUID.randomUUID().toString();
+        kafkaProducer.sendGymEntrance(token, correlationId);
+        return replyConsumer.waitForReply(correlationId);
+    }
+
     
 
     

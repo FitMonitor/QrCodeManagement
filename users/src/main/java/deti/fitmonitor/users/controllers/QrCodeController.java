@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import deti.fitmonitor.users.models.machineMessage;
+import deti.fitmonitor.users.models.gymMessage;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 
 import deti.fitmonitor.users.services.QrCodeService;
@@ -29,6 +30,13 @@ public class QrCodeController {
     );
     return ResponseEntity.ok(response);
     }
+
+    @PostMapping("/gym_entrance")
+    public ResponseEntity<String> gymEntrance(@AuthenticationPrincipal String usersub, @RequestBody gymMessage message) {
+        String response = qrCodeService.gymEntrance(message.getToken());
+        return ResponseEntity.ok(response);
+    }
+
 
 
 
