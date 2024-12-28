@@ -67,4 +67,26 @@ public class QRCodeController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);
         }
     }
+
+    @PostMapping("/generate-machine")
+    public ResponseEntity<byte[]> generateMachineQRCode(@RequestBody Map<String, String> request) {
+        try {
+            String machineId = request.get("machineId");
+
+            if (machineId == null || machineId.isEmpty()) {
+                return ResponseEntity.badRequest().body(null);
+            }
+
+            byte[] qrCodeImage = qrCodeService.generateQRCode(machineId, 300, 300);
+
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"machine-qrcode.png\"")
+                    .contentType(MediaType.IMAGE_PNG)
+                    .body(qrCodeImage);
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
 }
