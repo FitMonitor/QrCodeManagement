@@ -1,0 +1,17 @@
+package deti.fitmonitor.users.models;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
+public class machineMessage {
+
+    private String machineId;
+    private String intention;
+    
+}

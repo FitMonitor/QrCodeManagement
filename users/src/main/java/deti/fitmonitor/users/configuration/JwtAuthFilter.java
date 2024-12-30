@@ -59,7 +59,10 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 roles = jwtUtil.extractRoles(token);
                 System.out.println("Roles: " + roles);
 
-                if (roles != null && !roles.isEmpty()) {
+                if (jwtUtil.validateToken(token) && roles != null && !roles.isEmpty()) {
+
+                    String usersub = jwtUtil.extractUserSub(token);
+
                     // Convert roles into a list of GrantedAuthority
                     List<GrantedAuthority> authorities = roles.stream()
                             .map(role -> new SimpleGrantedAuthority("ROLE_" + role)) // Add prefix here
@@ -67,7 +70,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 
                     // Create UsernamePasswordAuthenticationToken with authorities
                     UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                            null, // principal
+                            usersub, // principal
                             null, // credentials
                             authorities // authorities
                     );

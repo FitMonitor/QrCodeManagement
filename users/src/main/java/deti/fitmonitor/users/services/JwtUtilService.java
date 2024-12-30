@@ -52,7 +52,7 @@ public class JwtUtilService {
         System.out.println("Kid: " + kid);
         RSAPublicKey publicKey = getPublicKeyFromJwks(kid);
         System.out.println("Public key: " + publicKey);
-        return Jwts.parser().setSigningKey(publicKey).build().parseSignedClaims(token).getPayload();
+        return Jwts.parser().verifyWith(publicKey).build().parseSignedClaims(token).getPayload();
     }
 
     public String extractKidFromToken(String token) throws Exception {
@@ -127,6 +127,24 @@ public class JwtUtilService {
     // Check if the token has expired
     public boolean isTokenExpired(String token) throws Exception {
         return extractExpiration(token).before(new Date());
+    }
+
+    // Extract the username (subject) from the token
+    public String extractUserSub(String token) throws Exception {
+        Claims claims = verifyToken(token);
+        return claims.getSubject();
+    }
+
+    public boolean validateToken(String token) throws Exception {
+        // Extract the username from the token
+        String username = extractUserSub(token);
+        // Extract the expiration date from the token
+        Date expiration = extractExpiration(token);
+        // Check if the token has expired
+        if (isTokenExpired(token)) {
+            return false;
+        }
+        return true;
     }
     
 }
