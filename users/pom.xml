@@ -129,9 +129,10 @@
 					<excludes>
 						<exclude>**/configuration/**</exclude>
 						<exclude>**/exceptions/**</exclude>
-						<exclude>deti/fitmonitor/users/services/JwtUtilService.class</exclude>
-						<exclude>deti/fitmonitor/users/controllers/GetTokenController.class</exclude>
-						<exclude>deti/fitmonitor/users/UsersApplication.class</exclude>
+						<exclude>**/deti/fitmonitor/users/configuration/JwtAuthFilter*</exclude>
+						<exclude>**/deti/fitmonitor/users/services/JwtUtilService*</exclude>
+						<exclude>**/deti/fitmonitor/users/controllers/GetTokenController*</exclude>
+						<exclude>**/deti/fitmonitor/users/UsersApplication*</exclude>
 					</excludes>
 				</configuration>
 				<executions>

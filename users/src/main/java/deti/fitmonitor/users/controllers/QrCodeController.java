@@ -12,7 +12,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 
 import deti.fitmonitor.users.services.QrCodeService;
 
-@CrossOrigin(origins = "*") // Allow all origins for CORS
+@CrossOrigin(origins = "localhost:4200")
 @RestController
 @RequestMapping("/api/qr")
 public class QrCodeController {

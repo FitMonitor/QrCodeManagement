@@ -35,16 +35,21 @@ public class consumer {
     public String waitForReply(String correlationId) {
         CompletableFuture<String> future = new CompletableFuture<>();
         addPendingReply(correlationId, future);
-
         try {
             // Wait for the reply with a timeout
             return future.get(10, TimeUnit.SECONDS);
-        } catch (TimeoutException | InterruptedException | ExecutionException e) {
+        } catch (TimeoutException | ExecutionException e) {
+            // Handle other exceptions (Timeout or Execution)
             throw new RuntimeException("Failed to get reply", e);
+        } catch (InterruptedException e) {
+            // Re-interrupt the thread to preserve the interrupt status
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Thread was interrupted while waiting for a reply", e);
         } finally {
             pendingReplies.remove(correlationId);
         }
     }
+    
 
 
 
