@@ -19,7 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-@CrossOrigin(origins = "*") // Allow all origins for CORS
+@CrossOrigin(origins = "http://localhost:4200") // Allow all origins for CORS
 @RestController
 @RequestMapping("/api/token")
 public class GetTokenController {
