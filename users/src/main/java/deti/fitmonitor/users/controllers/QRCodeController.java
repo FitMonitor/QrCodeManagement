@@ -14,6 +14,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+
 @RestController
 @RequestMapping("/api/qrcode")
 @CrossOrigin(origins = "http://localhost:4200")
@@ -28,6 +32,11 @@ public class QRCodeController {
     }
 
     @PostMapping("/validate")
+    @Operation(summary = "Validate QR Code")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "QR Code token is valid"),
+        @ApiResponse(responseCode = "401", description = "Invalid or expired QR Code token")
+    })
     public ResponseEntity<Map<String, Object>> validateQRCode(@RequestBody Map<String, String> request) {
         try {
             String qrToken = request.get("qrToken");
@@ -50,6 +59,11 @@ public class QRCodeController {
     }
 
     @PostMapping("/generate")
+    @Operation(summary = "Generate QR Code")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "QR Code generated"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
     public ResponseEntity<byte[]> generateQRCode(@RequestBody Map<String, String> request) {
         try {
             String token = request.get("token");
@@ -69,6 +83,12 @@ public class QRCodeController {
     }
 
     @PostMapping("/generate-machine")
+    @Operation(summary = "Generate Machine QR Code")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Machine QR Code generated"),
+        @ApiResponse(responseCode = "400", description = "Bad Request"),
+        @ApiResponse(responseCode = "500", description = "Internal Server Error")
+    })
     public ResponseEntity<byte[]> generateMachineQRCode(@RequestBody Map<String, String> request) {
         try {
             String machineId = request.get("machineId");
