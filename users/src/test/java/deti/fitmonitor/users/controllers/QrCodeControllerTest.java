@@ -60,7 +60,7 @@ public class QrCodeControllerTest {
         message.setIntention("use");
 
         // Perform POST request
-        mockMvc.perform(post("/api/qr/machine")
+        mockMvc.perform(post("/default/api/qr/machine")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(new ObjectMapper().writeValueAsString(message))
                 .characterEncoding("utf-8")
@@ -83,7 +83,7 @@ public class QrCodeControllerTest {
         message.setToken("123");
 
         // Perform POST request
-        mockMvc.perform(post("/api/qr/gym_entrance")
+        mockMvc.perform(post("/default/api/qr/gym_entrance")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(new ObjectMapper().writeValueAsString(message))
                 .characterEncoding("utf-8")

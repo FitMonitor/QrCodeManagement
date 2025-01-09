@@ -44,7 +44,7 @@ class QRCodeControllerTest {
                 }
                 """;
 
-        mockMvc.perform(post("/api/qrcode/validate")
+        mockMvc.perform(post("/default/api/qr/validate")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
                 .andExpect(status().isOk())
@@ -64,7 +64,7 @@ class QRCodeControllerTest {
                 }
                 """;
 
-        mockMvc.perform(post("/api/qrcode/validate")
+        mockMvc.perform(post("/default/api/qr/validate")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
                 .andExpect(status().isUnauthorized())
@@ -85,7 +85,7 @@ class QRCodeControllerTest {
                 }
                 """;
 
-        mockMvc.perform(post("/api/qrcode/generate")
+        mockMvc.perform(post("/default/api/qr/generate")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
                 .andExpect(status().isOk())
@@ -107,7 +107,7 @@ class QRCodeControllerTest {
                 }
                 """;
 
-        mockMvc.perform(post("/api/qrcode/generate-machine")
+        mockMvc.perform(post("/default/api/qr/generate-machine")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
                 .andExpect(status().isOk())
@@ -124,7 +124,7 @@ class QRCodeControllerTest {
                 }
                 """;
 
-        mockMvc.perform(post("/api/qrcode/generate-machine")
+        mockMvc.perform(post("/default/api/qr/generate-machine")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
                 .andExpect(status().isBadRequest());

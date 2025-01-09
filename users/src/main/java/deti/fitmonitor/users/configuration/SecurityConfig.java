@@ -3,15 +3,11 @@ package deti.fitmonitor.users.configuration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.client.RestTemplate;
@@ -38,8 +34,9 @@ public class SecurityConfig {
                                 .requestMatchers("/api/token/*").permitAll()
                                 .requestMatchers("/swagger-ui/*").permitAll()
                                 .requestMatchers("/v3/api-docs").permitAll()
-                                .requestMatchers("/api/qr/gym_entrance").hasRole("Admin")
-                                .requestMatchers("/api/qrcode/generate-machine").hasRole("Admin")
+                                .requestMatchers("/actuator/health").permitAll()
+                                .requestMatchers("/default/api/qr/gym_entrance").hasRole("Admin")
+                                .requestMatchers("/default/api/qr/generate-machine").hasRole("Admin")
                                 .anyRequest().authenticated())
                 .sessionManagement(manager -> manager.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);

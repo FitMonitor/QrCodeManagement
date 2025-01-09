@@ -16,9 +16,9 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 
-@CrossOrigin(origins = "http://localhost:4200")
+@CrossOrigin(origins = "https://es-ua.ddns.net")
 @RestController
-@RequestMapping("/api/qr")
+@RequestMapping("/default/api/qr")
 public class QrCodeController {
 
     private final QrCodeService qrCodeService;
