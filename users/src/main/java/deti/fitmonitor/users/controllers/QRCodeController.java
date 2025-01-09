@@ -19,8 +19,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 
 @RestController
-@RequestMapping("/api/qrcode")
-@CrossOrigin(origins = "http://localhost:4200")
+@RequestMapping("/default/api/qr")
+@CrossOrigin(origins = "https://es-ua.ddns.net")
 public class QRCodeController {
 
     private final JwtUtilService jwtUtilService;
@@ -90,6 +90,7 @@ public class QRCodeController {
         @ApiResponse(responseCode = "500", description = "Internal Server Error")
     })
     public ResponseEntity<byte[]> generateMachineQRCode(@RequestBody Map<String, String> request) {
+        System.out.println("Generating machine QR code");
         try {
             String machineId = request.get("machineId");
 
@@ -99,9 +100,15 @@ public class QRCodeController {
 
             byte[] qrCodeImage = qrCodeService.generateQRCode(machineId, 300, 300);
 
+            HttpHeaders headers = new HttpHeaders();
+            headers.set(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"machine-qrcode.png\"");
+            headers.set(HttpHeaders.CONTENT_TYPE, MediaType.IMAGE_PNG_VALUE);
+            headers.set(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "http://localhost:4200"); // Allowed origin
+            headers.set(HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS, "POST, OPTIONS"); // Allowed methods
+            headers.set(HttpHeaders.ACCESS_CONTROL_ALLOW_HEADERS, "Content-Type, Authorization"); // Allowed headers
+
             return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"machine-qrcode.png\"")
-                    .contentType(MediaType.IMAGE_PNG)
+                    .headers(headers)
                     .body(qrCodeImage);
 
         } catch (Exception e) {
