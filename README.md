@@ -1,3 +1,3 @@
-# UserManagement
+# Qr Code Management
 
-User management microservice for FitMonitor application
+Qr Code management microservice for FitMonitor application
